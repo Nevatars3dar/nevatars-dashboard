@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Nevatars - Asset Registry</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #4472C4 0%, #2d5aa0 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.2);
+        }
+
+        .header p {
+            opacity: 0.9;
+            font-size: 1.1em;
+        }
+
+        /* Stats Bar */
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            padding: 30px;
+            background: #f8f9fa;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            transition: transform 0.2s;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .stat-card .number {
+            font-size: 2.5em;
+            font-weight: bold;
+            color: #4472C4;
+            margin-bottom: 5px;
+        }
+
+        .stat-card .label {
+            color: #666;
+            font-size: 0.9em;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        /* Controls */
+        .controls {
+            padding: 30px;
+            background: white;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 15px 20px;
+            font-size: 16px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            transition: border-color 0.3s;
+        }
+
+        .search-box:focus {
+            outline: none;
+            border-color: #4472C4;
+        }
+
+        .filters {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            padding: 10px 20px;
+            border: 2px solid #ddd;
+            background: white;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .filter-btn:hover {
+            border-color: #4472C4;
+            color: #4472C4;
+        }
+
+        .filter-btn.active {
+            background: #4472C4;
+            color: white;
+            border-color: #4472C4;
+        }
+
+        /* Table */
+        .table-container {
+            padding: 30px;
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+        }
+
+        thead {
+            background: #4472C4;
+            color: white;
+            position: sticky;
+            top: 0;
+            z-index: 10;
+        }
+
+        th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        th:hover {
+            background: #2d5aa0;
+        }
+
+        th::after {
+            content: ' ⇅';
+            opacity: 0.3;
+            font-size: 0.8em;
+        }
+
+        th.sort-asc::after {
+            content: ' ▲';
+            opacity: 1;
+        }
+
+        th.sort-desc::after {
+            content: ' ▼';
+            opacity: 1;
+        }
+
+        td {
+            padding: 12px 15px;
+            border-bottom: 1px solid #e0e0e0;
+        }
+
+        tr:hover {
+            background: #f8f9fa;
+        }
+
+        tr:nth-child(even) {
+            background: #fafbfc;
+        }
+
+        tr:nth-child(even):hover {
+            background: #f0f2f5;
+        }
+
+        /* Status Colors */
+        .status {
+            padding: 5px 12px;
+            border-radius: 4px;
+            font-weight: 500;
+            display: inline-block;
+            font-size: 0.85em;
+        }
+
+        .status-wip {
+            background: #FFF2CC;
+            color: #856404;
+        }
+
+        .status-done {
+            background: #C6EFCE;
+            color: #155724;
+        }
+
+        .status-ready {
+            background: #C6E0B4;
+            color: #155724;
+        }
+
+        .status-blocked {
+            background: #FFC7CE;
+            color: #721c24;
+        }
+
+        .status-review {
+            background: #BDD7EE;
+            color: #004085;
+        }
+
+        /* Footer */
+        .footer {
+            padding: 20px;
+            text-align: center;
+            background: #f8f9fa;
+            color: #666;
+            font-size: 0.9em;
+            border-top: 2px solid #e0e0e0;
+        }
+
+        .no-results {
+            text-align: center;
+            padding: 60px 20px;
+            color: #999;
+            font-size: 1.2em;
+        }
+
+        /* Loading */
+        .loading {
+            text-align: center;
+            padding: 60px 20px;
+            font-size: 1.2em;
+            color: #666;
+        }
+
+        .loading::after {
+            content: '...';
+            animation: dots 1.5s steps(4, end) infinite;
+        }
+
+        @keyframes dots {
+            0%, 20% { content: '.'; }
+            40% { content: '..'; }
+            60%, 100% { content: '...'; }
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+
+            .stats {
+                grid-template-columns: 1fr;
+            }
+
+            table {
+                font-size: 0.9em;
+            }
+
+            th, td {
+                padding: 8px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🎨 Nevatars Asset Registry</h1>
+            <p>Asset management dashboard - YAML is the source of truth</p>
+        </div>
+
+        <div class="stats" id="stats">
+            <div class="stat-card">
+                <div class="number" id="total-assets">-</div>
+                <div class="label">Total Assets</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="wip-count">-</div>
+                <div class="label">WIP</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="done-count">-</div>
+                <div class="label">Done</div>
+            </div>
+            <div class="stat-card">
+                <div class="number" id="categories-count">-</div>
+                <div class="label">Categories</div>
+            </div>
+        </div>
+
+        <div class="controls">
+            <input
+                type="text"
+                class="search-box"
+                id="search"
+                placeholder="🔍 Search by name, category, status, asset_id..."
+            >
+            <div class="filters" id="filters">
+                <button class="filter-btn active" data-filter="all">All Assets</button>
+                <button class="filter-btn" data-filter="status:WIP">WIP</button>
+                <button class="filter-btn" data-filter="status:Done">Done</button>
+                <button class="filter-btn" data-filter="status:Blocked">Blocked</button>
+                <button class="filter-btn" data-filter="category:Characters">Characters</button>
+                <button class="filter-btn" data-filter="category:Props">Props</button>
+                <button class="filter-btn" data-filter="category:Environments">Environments</button>
+            </div>
+        </div>
+
+        <div class="table-container">
+            <div class="loading" id="loading">Loading assets</div>
+            <table id="assets-table" style="display: none;">
+                <thead>
+                    <tr>
+                        <th data-sort="name">Name</th>
+                        <th data-sort="criollo_name">Criollo Name</th>
+                        <th data-sort="asset_id">Asset ID</th>
+                        <th data-sort="category">Category</th>
+                        <th data-sort="subcategory">Subcategory</th>
+                        <th data-sort="status">Status</th>
+                        <th data-sort="type">Type</th>
+                        <th data-sort="created_by">Created By</th>
+                    </tr>
+                </thead>
+                <tbody id="table-body">
+                </tbody>
+            </table>
+            <div class="no-results" id="no-results" style="display: none;">
+                No assets found matching your criteria
+            </div>
+        </div>
+
+        <div class="footer">
+            <p>Last updated: <span id="last-update">-</span></p>
+            <p>Nevatars Pipeline © 2025 | YAML → Google Sheets → Dashboard</p>
+        </div>
+    </div>
+
+    <script>
+        // ====================================================================
+        // CONFIGURATION - Paste your Google Sheets published URL here
+        // ====================================================================
+
+        // Option 1: Use Google Sheets (recommended - always up to date)
+        // Get this URL from: File → Share → Publish to web → Select "By Category" sheet → CSV
+        const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/15wNX3JHbVsmkzck3a9u11CoCrE1gqCB2al4nXcOxvFE/edit?gid=1655262902#gid=1655262902';
+
+        // Option 2: Use local JSON file (fallback for testing)
+        const USE_LOCAL_JSON = false;  // Set to true for offline testing
+
+        // ====================================================================
+
+        let allAssets = [];
+        let filteredAssets = [];
+        let currentSort = { column: 'name', direction: 'asc' };
+        let currentFilter = 'all';
+
+        // Parse CSV data from Google Sheets
+        function parseCSV(csvText) {
+            const lines = csvText.trim().split('\n');
+            if (lines.length < 2) return [];
+
+            // Parse header
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^"|"$/g, ''));
+
+            // Parse rows
+            const assets = [];
+            for (let i = 1; i < lines.length; i++) {
+                const values = parseCSVLine(lines[i]);
+                if (values.length === 0) continue;
+
+                const asset = {};
+                headers.forEach((header, index) => {
+                    asset[header] = values[index] || '';
+                });
+                assets.push(asset);
+            }
+
+            return assets;
+        }
+
+        // Parse a single CSV line (handles quoted fields with commas)
+        function parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim().replace(/^"|"$/g, ''));
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+
+            result.push(current.trim().replace(/^"|"$/g, ''));
+            return result;
+        }
+
+        // Load data from Google Sheets or local JSON
+        async function loadAssets() {
+            try {
+                let data;
+
+                if (USE_LOCAL_JSON || GOOGLE_SHEETS_URL === 'PASTE_YOUR_GOOGLE_SHEETS_URL_HERE') {
+                    // Fallback to local JSON
+                    console.log('Using local JSON file...');
+                    const response = await fetch('assets_data.json');
+                    data = await response.json();
+                    allAssets = data.assets || [];
+
+                    if (data.generated_at) {
+                        document.getElementById('last-update').textContent =
+                            new Date(data.generated_at).toLocaleString('es-AR');
+                    }
+                } else {
+                    // Load from Google Sheets
+                    console.log('Loading from Google Sheets...');
+                    const response = await fetch(GOOGLE_SHEETS_URL);
+                    const csvText = await response.text();
+                    allAssets = parseCSV(csvText);
+
+                    // Set update time to now (Google Sheets is always current)
+                    document.getElementById('last-update').textContent =
+                        new Date().toLocaleString('es-AR');
+                }
+
+                filteredAssets = [...allAssets];
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('assets-table').style.display = 'table';
+
+                updateStats();
+                renderTable();
+
+                console.log(`✓ Loaded ${allAssets.length} assets`);
+            } catch (error) {
+                let errorMsg = '❌ Error loading data. ';
+
+                if (GOOGLE_SHEETS_URL === 'PASTE_YOUR_GOOGLE_SHEETS_URL_HERE') {
+                    errorMsg += 'Please configure GOOGLE_SHEETS_URL in the HTML file. See GITHUB_PAGES_SETUP.md for instructions.';
+                } else if (error.message.includes('Failed to fetch')) {
+                    errorMsg += 'Cannot reach Google Sheets. Check the published URL is correct and publicly accessible.';
+                } else {
+                    errorMsg += 'Make sure Google Sheets is published to web (File → Share → Publish to web).';
+                }
+
+                document.getElementById('loading').innerHTML = errorMsg;
+                console.error('Error:', error);
+            }
+        }
+
+        // Update statistics
+        function updateStats() {
+            const stats = {
+                total: allAssets.length,
+                wip: allAssets.filter(a => a.status === 'WIP').length,
+                done: allAssets.filter(a => a.status === 'Done').length,
+                categories: new Set(allAssets.map(a => a.category)).size
+            };
+
+            document.getElementById('total-assets').textContent = stats.total;
+            document.getElementById('wip-count').textContent = stats.wip;
+            document.getElementById('done-count').textContent = stats.done;
+            document.getElementById('categories-count').textContent = stats.categories;
+        }
+
+        // Render table
+        function renderTable() {
+            const tbody = document.getElementById('table-body');
+            const noResults = document.getElementById('no-results');
+
+            if (filteredAssets.length === 0) {
+                tbody.innerHTML = '';
+                noResults.style.display = 'block';
+                return;
+            }
+
+            noResults.style.display = 'none';
+
+            tbody.innerHTML = filteredAssets.map(asset => `
+                <tr>
+                    <td><strong>${asset.name || '-'}</strong></td>
+                    <td>${asset.criollo_name || '-'}</td>
+                    <td><code>${asset.asset_id || '-'}</code></td>
+                    <td>${asset.category || '-'}</td>
+                    <td>${asset.subcategory || '-'}</td>
+                    <td><span class="status status-${(asset.status || '').toLowerCase()}">${asset.status || '-'}</span></td>
+                    <td>${asset.type || '-'}</td>
+                    <td>${asset.created_by || '-'}</td>
+                </tr>
+            `).join('');
+        }
+
+        // Search
+        document.getElementById('search').addEventListener('input', (e) => {
+            const query = e.target.value.toLowerCase();
+            filteredAssets = allAssets.filter(asset => {
+                return Object.values(asset).some(val =>
+                    String(val).toLowerCase().includes(query)
+                );
+            });
+            applyCurrentFilter();
+        });
+
+        // Filters
+        document.getElementById('filters').addEventListener('click', (e) => {
+            if (!e.target.classList.contains('filter-btn')) return;
+
+            document.querySelectorAll('.filter-btn').forEach(btn =>
+                btn.classList.remove('active')
+            );
+            e.target.classList.add('active');
+
+            currentFilter = e.target.dataset.filter;
+            applyCurrentFilter();
+        });
+
+        function applyCurrentFilter() {
+            if (currentFilter === 'all') {
+                // filteredAssets already set by search
+            } else if (currentFilter.includes(':')) {
+                const [key, value] = currentFilter.split(':');
+                filteredAssets = filteredAssets.filter(asset =>
+                    asset[key] === value
+                );
+            }
+            sortTable(currentSort.column, currentSort.direction);
+        }
+
+        // Sorting
+        document.querySelectorAll('th[data-sort]').forEach(th => {
+            th.addEventListener('click', () => {
+                const column = th.dataset.sort;
+                const direction = currentSort.column === column && currentSort.direction === 'asc'
+                    ? 'desc'
+                    : 'asc';
+                sortTable(column, direction);
+
+                // Update UI
+                document.querySelectorAll('th').forEach(h => {
+                    h.classList.remove('sort-asc', 'sort-desc');
+                });
+                th.classList.add(direction === 'asc' ? 'sort-asc' : 'sort-desc');
+            });
+        });
+
+        function sortTable(column, direction) {
+            currentSort = { column, direction };
+            filteredAssets.sort((a, b) => {
+                let aVal = a[column] || '';
+                let bVal = b[column] || '';
+
+                if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+                if (typeof bVal === 'string') bVal = bVal.toLowerCase();
+
+                if (aVal < bVal) return direction === 'asc' ? -1 : 1;
+                if (aVal > bVal) return direction === 'asc' ? 1 : -1;
+                return 0;
+            });
+            renderTable();
+        }
+
+        // Initialize
+        loadAssets();
+    </script>
+</body>
+</html>

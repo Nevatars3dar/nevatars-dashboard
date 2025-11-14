@@ -1,0 +1,40 @@
+# Nevatars Asset Dashboard - Git Ignore File
+# These files should NOT be committed to GitHub
+
+# Data files (not needed - using Google Sheets!)
+assets_data.json
+
+# Local server files (not needed on GitHub Pages)
+start_server.py
+START_DASHBOARD_SERVER.bat
+push_to_github.py
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Virtual environments
+venv/
+env/
+ENV/
+
+# OS files
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Logs
+*.log
+
+# Temporary files
+*.tmp
+*.bak
