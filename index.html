@@ -200,6 +200,34 @@
             background: #f0f2f5;
         }
 
+        /* Sub-Asset Row Styling */
+        .sub-asset-row {
+            background: #f8f9fa;
+        }
+
+        .sub-asset-row:hover {
+            background: #eef0f3 !important;
+        }
+
+        .sub-asset-name {
+            padding-left: 30px;
+            font-style: italic;
+            color: #666;
+        }
+
+        .sub-asset-name::before {
+            content: "↳ ";
+            color: #4472C4;
+            font-weight: bold;
+        }
+
+        /* Optimization Columns */
+        .optimization-cell {
+            font-family: 'Courier New', monospace;
+            font-size: 0.9em;
+            color: #555;
+        }
+
         /* Status Colors */
         .status {
             padding: 5px 12px;
@@ -339,14 +367,17 @@
             <table id="assets-table" style="display: none;">
                 <thead>
                     <tr>
-                        <th data-sort="name">Name</th>
-                        <th data-sort="criollo_name">Criollo Name</th>
-                        <th data-sort="asset_id">Asset ID</th>
                         <th data-sort="category">Category</th>
                         <th data-sort="subcategory">Subcategory</th>
+                        <th data-sort="name">Name</th>
+                        <th data-sort="criollo_name">Criollo Name</th>
+                        <th data-sort="sub_asset">Sub-Asset</th>
                         <th data-sort="status">Status</th>
                         <th data-sort="type">Type</th>
                         <th data-sort="created_by">Created By</th>
+                        <th data-sort="vertex_count">Vertices</th>
+                        <th data-sort="image_size">Tex Size</th>
+                        <th data-sort="materials_max">Materials</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
@@ -510,18 +541,29 @@
 
             noResults.style.display = 'none';
 
-            tbody.innerHTML = filteredAssets.map(asset => `
-                <tr>
-                    <td><strong>${asset.name || '-'}</strong></td>
-                    <td>${asset.criollo_name || '-'}</td>
-                    <td><code>${asset.asset_id || '-'}</code></td>
-                    <td>${asset.category || '-'}</td>
-                    <td>${asset.subcategory || '-'}</td>
-                    <td><span class="status status-${(asset.status || '').toLowerCase()}">${asset.status || '-'}</span></td>
-                    <td>${asset.type || '-'}</td>
-                    <td>${asset.created_by || '-'}</td>
-                </tr>
-            `).join('');
+            tbody.innerHTML = filteredAssets.map(asset => {
+                const isSubAsset = asset.sub_asset && asset.sub_asset.trim() !== '';
+                const rowClass = isSubAsset ? 'sub-asset-row' : '';
+                const nameDisplay = isSubAsset
+                    ? `<span class="sub-asset-name">${asset.sub_asset}</span>`
+                    : `<strong>${asset.name || '-'}</strong>`;
+
+                return `
+                    <tr class="${rowClass}">
+                        <td>${asset.category || '-'}</td>
+                        <td>${asset.subcategory || '-'}</td>
+                        <td>${nameDisplay}</td>
+                        <td>${asset.criollo_name || '-'}</td>
+                        <td>${asset.sub_asset || '-'}</td>
+                        <td><span class="status status-${(asset.status || '').toLowerCase()}">${asset.status || '-'}</span></td>
+                        <td>${asset.type || '-'}</td>
+                        <td>${asset.created_by || '-'}</td>
+                        <td class="optimization-cell">${asset.vertex_count || '-'}</td>
+                        <td class="optimization-cell">${asset.image_size || '-'}</td>
+                        <td class="optimization-cell">${asset.materials_max || '-'}</td>
+                    </tr>
+                `;
+            }).join('');
         }
 
         // Search
