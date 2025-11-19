@@ -200,10 +200,50 @@
             background: #f0f2f5;
         }
 
-        /* Sub-Asset Row Styling */
+        /* Accordion Style for Sub-Assets */
+        .accordion-row {
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .accordion-row:hover {
+            background: #e8f4fc !important;
+        }
+
+        .accordion-toggle {
+            display: inline-block;
+            width: 18px;
+            height: 18px;
+            line-height: 16px;
+            text-align: center;
+            margin-right: 8px;
+            color: #4472C4;
+            font-size: 10px;
+            transition: transform 0.2s;
+        }
+
+        .accordion-toggle.collapsed::after {
+            content: '▶';
+        }
+
+        .accordion-toggle.expanded::after {
+            content: '▼';
+        }
+
+        .sub-asset-count {
+            font-size: 0.75em;
+            color: #fff;
+            margin-left: 8px;
+            background: #4472C4;
+            padding: 2px 8px;
+            border-radius: 10px;
+        }
+
+        /* Sub-Asset Row (Accordion Content) */
         .sub-asset-row {
-            background: #f8f9fa;
-            display: none; /* Hidden by default */
+            display: none;
+            background: linear-gradient(90deg, #f0f7ff 0%, #fafbfc 100%);
+            border-left: 3px solid #4472C4;
         }
 
         .sub-asset-row.visible {
@@ -211,56 +251,27 @@
         }
 
         .sub-asset-row:hover {
-            background: #eef0f3 !important;
+            background: linear-gradient(90deg, #e3f0ff 0%, #f0f2f5 100%) !important;
+        }
+
+        .sub-asset-row td:first-child {
+            padding-left: 25px;
         }
 
         .sub-asset-name {
-            padding-left: 40px;
-            font-style: italic;
-            color: #666;
+            font-weight: 500;
+            color: #4472C4;
         }
 
         .sub-asset-name::before {
-            content: "↳ ";
-            color: #4472C4;
-            font-weight: bold;
+            content: "└─ ";
+            color: #ccc;
+            font-family: monospace;
         }
 
-        /* Expand/Collapse Button */
-        .expand-btn {
-            cursor: pointer;
-            user-select: none;
+        .no-accordion {
             display: inline-block;
-            width: 20px;
-            height: 20px;
-            line-height: 18px;
-            text-align: center;
-            margin-right: 8px;
-            background: #4472C4;
-            color: white;
-            border-radius: 3px;
-            font-size: 14px;
-            font-weight: bold;
-            transition: all 0.2s;
-        }
-
-        .expand-btn:hover {
-            background: #2d5aa0;
-            transform: scale(1.1);
-        }
-
-        .expand-btn.collapsed::after {
-            content: '+';
-        }
-
-        .expand-btn.expanded::after {
-            content: '−';
-        }
-
-        .no-expand {
-            display: inline-block;
-            width: 20px;
-            margin-right: 8px;
+            width: 26px;
         }
 
         /* Optimization Columns */
@@ -621,19 +632,26 @@
                 const parent = group.parent;
                 const hasChildren = group.children.length > 0;
                 const groupId = `group-${groupIndex++}`;
+                const childCount = group.children.length;
 
-                // Render parent row
-                const expandBtn = hasChildren
-                    ? `<span class="expand-btn collapsed" data-group="${groupId}" onclick="toggleGroup('${groupId}')"></span>`
-                    : '<span class="no-expand"></span>';
+                // Render parent row with accordion toggle
+                const accordionToggle = hasChildren
+                    ? `<span class="accordion-toggle collapsed" data-group="${groupId}" onclick="toggleGroup('${groupId}')"></span>`
+                    : '<span class="no-accordion"></span>';
+
+                const countBadge = hasChildren
+                    ? `<span class="sub-asset-count">${childCount} sub-asset${childCount > 1 ? 's' : ''}</span>`
+                    : '';
+
+                const rowClass = hasChildren ? 'accordion-row' : '';
 
                 html += `
-                    <tr class="parent-row">
+                    <tr class="${rowClass}" ${hasChildren ? `onclick="toggleGroup('${groupId}')"` : ''}>
                         <td>${parent.category || '-'}</td>
                         <td>${parent.subcategory || '-'}</td>
-                        <td>${expandBtn}<strong>${parent.name || '-'}</strong></td>
+                        <td>${accordionToggle}<strong>${parent.name || '-'}</strong>${countBadge}</td>
                         <td>${parent.criollo_name || '-'}</td>
-                        <td><em>${parent.sub_assets_list || '-'}</em></td>
+                        <td>-</td>
                         <td><span class="status status-${(parent.status || '').toLowerCase()}">${parent.status || '-'}</span></td>
                         <td>${parent.created_by || '-'}</td>
                         <td class="optimization-cell">${parent.vertex_count || '-'}</td>
@@ -644,12 +662,12 @@
                     </tr>
                 `;
 
-                // Render sub-asset rows
+                // Render sub-asset rows (hidden by default, shown on accordion expand)
                 group.children.forEach(child => {
                     html += `
                         <tr class="sub-asset-row" data-group="${groupId}">
-                            <td>${child.category || '-'}</td>
-                            <td>${child.subcategory || '-'}</td>
+                            <td></td>
+                            <td></td>
                             <td><span class="sub-asset-name">${child.sub_asset}</span></td>
                             <td>${child.criollo_name || '-'}</td>
                             <td>-</td>
@@ -668,10 +686,14 @@
             tbody.innerHTML = html;
         }
 
-        // Toggle expand/collapse for sub-assets
+        // Toggle accordion expand/collapse for sub-assets
         function toggleGroup(groupId) {
-            const btn = document.querySelector(`.expand-btn[data-group="${groupId}"]`);
+            event.stopPropagation(); // Prevent double-triggering
+
+            const btn = document.querySelector(`.accordion-toggle[data-group="${groupId}"]`);
             const rows = document.querySelectorAll(`.sub-asset-row[data-group="${groupId}"]`);
+
+            if (!btn) return;
 
             if (btn.classList.contains('collapsed')) {
                 // Expand
