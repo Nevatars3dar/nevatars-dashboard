@@ -203,6 +203,11 @@
         /* Sub-Asset Row Styling */
         .sub-asset-row {
             background: #f8f9fa;
+            display: none; /* Hidden by default */
+        }
+
+        .sub-asset-row.visible {
+            display: table-row;
         }
 
         .sub-asset-row:hover {
@@ -210,7 +215,7 @@
         }
 
         .sub-asset-name {
-            padding-left: 30px;
+            padding-left: 40px;
             font-style: italic;
             color: #666;
         }
@@ -219,6 +224,43 @@
             content: "↳ ";
             color: #4472C4;
             font-weight: bold;
+        }
+
+        /* Expand/Collapse Button */
+        .expand-btn {
+            cursor: pointer;
+            user-select: none;
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            line-height: 18px;
+            text-align: center;
+            margin-right: 8px;
+            background: #4472C4;
+            color: white;
+            border-radius: 3px;
+            font-size: 14px;
+            font-weight: bold;
+            transition: all 0.2s;
+        }
+
+        .expand-btn:hover {
+            background: #2d5aa0;
+            transform: scale(1.1);
+        }
+
+        .expand-btn.collapsed::after {
+            content: '+';
+        }
+
+        .expand-btn.expanded::after {
+            content: '−';
+        }
+
+        .no-expand {
+            display: inline-block;
+            width: 20px;
+            margin-right: 8px;
         }
 
         /* Optimization Columns */
@@ -371,13 +413,14 @@
                         <th data-sort="subcategory">Subcategory</th>
                         <th data-sort="name">Name</th>
                         <th data-sort="criollo_name">Criollo Name</th>
-                        <th data-sort="sub_asset">Sub-Asset</th>
+                        <th data-sort="sub_assets_list">Sub-Assets</th>
                         <th data-sort="status">Status</th>
-                        <th data-sort="type">Type</th>
                         <th data-sort="created_by">Created By</th>
                         <th data-sort="vertex_count">Vertices</th>
                         <th data-sort="image_size">Tex Size</th>
+                        <th data-sort="polycount_lod0">Polycount</th>
                         <th data-sort="materials_max">Materials</th>
+                        <th data-sort="tex_resolution">Tex Res</th>
                     </tr>
                 </thead>
                 <tbody id="table-body">
@@ -401,7 +444,7 @@
 
         // Option 1: Use Google Sheets (recommended - always up to date)
         // Get this URL from: File → Share → Publish to web → Select "By Category" sheet → CSV
-        const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQrB_eDVjfUJ1_qXytGt2u1bgB3gipec-zRH_Y9qgjk89MjYgDb88xsl9mgtFWmy9UcrkvzhAX89c0q/pub?output=csv';
+        const GOOGLE_SHEETS_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vQrB_eDVjfUJ1_qXytGt2u1bgB3gipec-zRH_Y9qgjk89MjYgDb88xsl9mgtFWmy9UcrkvzhAX89c0q/pub?gid=1655262902&single=true&output=csv';
 
         // Option 2: Use local JSON file (fallback for testing)
         const USE_LOCAL_JSON = false;  // Set to true for offline testing
@@ -528,7 +571,32 @@
             document.getElementById('categories-count').textContent = stats.categories;
         }
 
-        // Render table
+        // Group assets by parent name (to identify sub-assets)
+        function groupAssets(assets) {
+            const groups = {};
+
+            assets.forEach(asset => {
+                const parentKey = `${asset.category}|${asset.subcategory}|${asset.name}`;
+
+                if (!groups[parentKey]) {
+                    groups[parentKey] = {
+                        parent: null,
+                        children: []
+                    };
+                }
+
+                const isSubAsset = asset.sub_asset && asset.sub_asset.trim() !== '';
+                if (isSubAsset) {
+                    groups[parentKey].children.push(asset);
+                } else {
+                    groups[parentKey].parent = asset;
+                }
+            });
+
+            return groups;
+        }
+
+        // Render table with expandable groups
         function renderTable() {
             const tbody = document.getElementById('table-body');
             const noResults = document.getElementById('no-results');
@@ -541,29 +609,81 @@
 
             noResults.style.display = 'none';
 
-            tbody.innerHTML = filteredAssets.map(asset => {
-                const isSubAsset = asset.sub_asset && asset.sub_asset.trim() !== '';
-                const rowClass = isSubAsset ? 'sub-asset-row' : '';
-                const nameDisplay = isSubAsset
-                    ? `<span class="sub-asset-name">${asset.sub_asset}</span>`
-                    : `<strong>${asset.name || '-'}</strong>`;
+            // Group assets
+            const groups = groupAssets(filteredAssets);
+            let html = '';
+            let groupIndex = 0;
 
-                return `
-                    <tr class="${rowClass}">
-                        <td>${asset.category || '-'}</td>
-                        <td>${asset.subcategory || '-'}</td>
-                        <td>${nameDisplay}</td>
-                        <td>${asset.criollo_name || '-'}</td>
-                        <td>${asset.sub_asset || '-'}</td>
-                        <td><span class="status status-${(asset.status || '').toLowerCase()}">${asset.status || '-'}</span></td>
-                        <td>${asset.type || '-'}</td>
-                        <td>${asset.created_by || '-'}</td>
-                        <td class="optimization-cell">${asset.vertex_count || '-'}</td>
-                        <td class="optimization-cell">${asset.image_size || '-'}</td>
-                        <td class="optimization-cell">${asset.materials_max || '-'}</td>
+            // Render each group
+            Object.values(groups).forEach(group => {
+                if (!group.parent) return; // Skip if no parent
+
+                const parent = group.parent;
+                const hasChildren = group.children.length > 0;
+                const groupId = `group-${groupIndex++}`;
+
+                // Render parent row
+                const expandBtn = hasChildren
+                    ? `<span class="expand-btn collapsed" data-group="${groupId}" onclick="toggleGroup('${groupId}')"></span>`
+                    : '<span class="no-expand"></span>';
+
+                html += `
+                    <tr class="parent-row">
+                        <td>${parent.category || '-'}</td>
+                        <td>${parent.subcategory || '-'}</td>
+                        <td>${expandBtn}<strong>${parent.name || '-'}</strong></td>
+                        <td>${parent.criollo_name || '-'}</td>
+                        <td><em>${parent.sub_assets_list || '-'}</em></td>
+                        <td><span class="status status-${(parent.status || '').toLowerCase()}">${parent.status || '-'}</span></td>
+                        <td>${parent.created_by || '-'}</td>
+                        <td class="optimization-cell">${parent.vertex_count || '-'}</td>
+                        <td class="optimization-cell">${parent.image_size || '-'}</td>
+                        <td class="optimization-cell">${parent.polycount_lod0 || '-'}</td>
+                        <td class="optimization-cell">${parent.materials_max || '-'}</td>
+                        <td class="optimization-cell">${parent.tex_resolution || '-'}</td>
                     </tr>
                 `;
-            }).join('');
+
+                // Render sub-asset rows
+                group.children.forEach(child => {
+                    html += `
+                        <tr class="sub-asset-row" data-group="${groupId}">
+                            <td>${child.category || '-'}</td>
+                            <td>${child.subcategory || '-'}</td>
+                            <td><span class="sub-asset-name">${child.sub_asset}</span></td>
+                            <td>${child.criollo_name || '-'}</td>
+                            <td>-</td>
+                            <td><span class="status status-${(child.status || '').toLowerCase()}">${child.status || '-'}</span></td>
+                            <td>${child.created_by || '-'}</td>
+                            <td class="optimization-cell">${child.vertex_count || '-'}</td>
+                            <td class="optimization-cell">${child.image_size || '-'}</td>
+                            <td class="optimization-cell">${child.polycount_lod0 || '-'}</td>
+                            <td class="optimization-cell">${child.materials_max || '-'}</td>
+                            <td class="optimization-cell">${child.tex_resolution || '-'}</td>
+                        </tr>
+                    `;
+                });
+            });
+
+            tbody.innerHTML = html;
+        }
+
+        // Toggle expand/collapse for sub-assets
+        function toggleGroup(groupId) {
+            const btn = document.querySelector(`.expand-btn[data-group="${groupId}"]`);
+            const rows = document.querySelectorAll(`.sub-asset-row[data-group="${groupId}"]`);
+
+            if (btn.classList.contains('collapsed')) {
+                // Expand
+                btn.classList.remove('collapsed');
+                btn.classList.add('expanded');
+                rows.forEach(row => row.classList.add('visible'));
+            } else {
+                // Collapse
+                btn.classList.remove('expanded');
+                btn.classList.add('collapsed');
+                rows.forEach(row => row.classList.remove('visible'));
+            }
         }
 
         // Search
